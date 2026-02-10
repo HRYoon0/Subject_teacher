@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button, Card, Modal, Select } from '@/components/ui';
 import { ClassScheduleGrid, TeacherScheduleGrid } from '@/components/schedule';
 import { useSettingsStore } from '@/stores/settings-store';
@@ -76,6 +76,13 @@ export default function SchedulePage() {
       .map((a) => a.subjectId);
     return subjects.filter((s) => subjectIds.includes(s.id));
   }, [selectedTeacher, selectedGrade, subjects]);
+
+  // 과목이 1개뿐이면 자동 선택
+  useEffect(() => {
+    if (availableSubjects.length === 1 && !selectedSubject) {
+      setSelectedSubject(availableSubjects[0].id);
+    }
+  }, [availableSubjects, selectedSubject]);
 
   // 빈 슬롯 클릭 핸들러
   const handleSlotClick = (day: Day, period: Period) => {
