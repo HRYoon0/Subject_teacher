@@ -94,6 +94,27 @@ export default function SchedulePage() {
   const handleAddEntry = () => {
     if (!newEntryModal || !selectedTeacher || !selectedGrade || !selectedClass || !selectedSubject) return;
 
+    // 해당 시간에 이미 다른 교사의 수업이 있는지 확인
+    const existingEntries = schedule.filter(
+      (e) =>
+        e.grade === selectedGrade &&
+        e.classNumber === selectedClass &&
+        e.day === newEntryModal.day &&
+        e.period === newEntryModal.period
+    );
+
+    if (existingEntries.length > 0) {
+      const existingTeacherNames = existingEntries
+        .map((e) => teachers.find((t) => t.id === e.teacherId)?.name || '알 수 없음')
+        .join(', ');
+
+      const confirmed = window.confirm(
+        `${selectedGrade}학년 ${selectedClass}반 ${newEntryModal.day}요일 ${newEntryModal.period}교시에 이미 ${existingTeacherNames} 선생님의 수업이 있습니다.\n\n협력수업으로 추가하시겠습니까?`
+      );
+
+      if (!confirmed) return;
+    }
+
     addEntry({
       teacherId: selectedTeacher.id,
       grade: selectedGrade,
