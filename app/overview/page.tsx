@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Button, Card, Select, Badge } from '@/components/ui';
+import { useState } from 'react';
+import { Button, Card, Select } from '@/components/ui';
 import { useSettingsStore } from '@/stores/settings-store';
 import { useTeachersStore } from '@/stores/teachers-store';
 import { useScheduleStore } from '@/stores/schedule-store';
 import { DAYS, PERIODS, Grade, Day, Period } from '@/types';
+import { generateExcel } from '@/lib/export-excel';
+import { generateDocx } from '@/lib/export-docx';
+import { generateHwpx } from '@/lib/export-hwpx';
 
 type ViewMode = 'by-teacher' | 'by-grade' | 'by-class';
 
@@ -37,32 +40,26 @@ export default function OverviewPage() {
     });
   };
 
+  // 파일 다운로드 헬퍼
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const exportData = { schedule, teachers, subjects, grades: enabledGrades };
+
   // 엑셀 다운로드
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch('/api/export/excel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedule,
-          teachers,
-          subjects,
-          grades: enabledGrades,
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '전담교사_시간표.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const blob = await generateExcel(exportData);
+      downloadBlob(blob, '전담교사_시간표.xlsx');
     } catch (error) {
       console.error('엑셀 다운로드 실패:', error);
     } finally {
@@ -74,30 +71,23 @@ export default function OverviewPage() {
   const handleExportDocx = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch('/api/export/docx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedule,
-          teachers,
-          subjects,
-          grades: enabledGrades,
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '전담교사_시간표.docx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const blob = await generateDocx(exportData);
+      downloadBlob(blob, '전담교사_시간표.docx');
     } catch (error) {
       console.error('DOCX 다운로드 실패:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // HWPX 다운로드
+  const handleExportHwpx = async () => {
+    setIsExporting(true);
+    try {
+      const blob = await generateHwpx(exportData);
+      downloadBlob(blob, '전담교사_시간표.hwpx');
+    } catch (error) {
+      console.error('HWPX 다운로드 실패:', error);
     } finally {
       setIsExporting(false);
     }
@@ -125,6 +115,12 @@ export default function OverviewPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Word 다운로드
+          </Button>
+          <Button variant="secondary" onClick={handleExportHwpx} disabled={isExporting}>
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            한글 다운로드
           </Button>
         </div>
       </div>

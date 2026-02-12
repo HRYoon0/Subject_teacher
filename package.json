@@ -5,24 +5,23 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
-    "@auth/core": "^0.41.0",
     "docx": "^9.5.1",
     "exceljs": "^4.4.0",
-    "googleapis": "^171.2.0",
     "jszip": "^3.10.1",
     "next": "16.1.6",
-    "next-auth": "^5.0.0-beta.30",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

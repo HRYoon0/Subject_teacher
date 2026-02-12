@@ -1,6 +1,13 @@
 import JSZip from 'jszip';
 import { ScheduleEntry, Teacher, Subject, GradeSettings, DAYS, PERIODS } from '@/types';
 
+export interface HwpxData {
+  schedule: ScheduleEntry[];
+  teachers: Teacher[];
+  subjects: Subject[];
+  grades: GradeSettings[];
+}
+
 // HWPX 기본 XML 템플릿들
 const VERSION_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hh:HWPXVersion xmlns:hh="http://www.hancom.co.kr/hwpx/format/2.0" version="2.0"/>`;
@@ -40,9 +47,18 @@ const SETTINGS_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <hh:startPageNum systemDefault="true"/>
 </hh:settings>`;
 
+// XML 특수문자 이스케이프
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 // 테이블 셀 생성 헬퍼
 function createTableCell(text: string, width: number, bgColor?: string): string {
-  const bg = bgColor ? `fillColor="${bgColor}"` : '';
   return `
     <hp:tc>
       <hp:cellAddr colAddr="0" rowAddr="0"/>
@@ -57,30 +73,16 @@ function createTableCell(text: string, width: number, bgColor?: string): string 
     </hp:tc>`;
 }
 
-// XML 특수문자 이스케이프
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
 // 시간표 테이블 생성
 function createScheduleTable(
   title: string,
   headers: string[],
   rows: string[][]
 ): string {
-  const colCount = headers.length;
-  const rowCount = rows.length + 1; // +1 for header
-
   let tableXml = `
     <hp:tbl>
       <hp:tr>`;
 
-  // 헤더 행
   headers.forEach((header) => {
     tableXml += createTableCell(header, 1500, '#E5E7EB');
   });
@@ -88,7 +90,6 @@ function createScheduleTable(
   tableXml += `
       </hp:tr>`;
 
-  // 데이터 행
   rows.forEach((row) => {
     tableXml += `
       <hp:tr>`;
@@ -112,15 +113,9 @@ function createScheduleTable(
     <hp:para/>`;
 }
 
-export interface HwpxData {
-  schedule: ScheduleEntry[];
-  teachers: Teacher[];
-  subjects: Subject[];
-  grades: GradeSettings[];
-}
-
-export async function generateHwpx(data: HwpxData): Promise<Buffer> {
-  const { schedule, teachers, subjects, grades } = data;
+// HWPX Blob 생성 (브라우저에서 직접 실행)
+export async function generateHwpx(data: HwpxData): Promise<Blob> {
+  const { schedule, teachers, subjects } = data;
 
   let sectionContent = '';
 
@@ -184,7 +179,6 @@ export async function generateHwpx(data: HwpxData): Promise<Buffer> {
   zip.file('Contents/section0.xml', sectionXml);
   zip.file('settings.xml', SETTINGS_XML);
 
-  // 버퍼로 변환
-  const buffer = await zip.generateAsync({ type: 'nodebuffer' });
-  return buffer;
+  // 브라우저용: Blob으로 생성
+  return await zip.generateAsync({ type: 'blob' });
 }
